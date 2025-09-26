@@ -29,6 +29,7 @@ class ParlayLeg:
 @dataclass(slots=True)
 class Bet:
     id: str
+    user_id: str
     event_date: date
     type: str
     detail: str
@@ -44,6 +45,7 @@ class Bet:
     def from_dict(cls, data: dict) -> "Bet":
         return cls(
             id=str(data.get("id")),
+            user_id=str(data.get("user_id")),
             event_date=_parse_date(data.get("event_date")),
             type=str(data.get("type", "single")),
             detail=data.get("detail", ""),
@@ -59,6 +61,7 @@ class Bet:
     def to_dict(self) -> dict:
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "event_date": self.event_date.isoformat(),
             "type": self.type,
             "detail": self.detail,
@@ -72,8 +75,7 @@ class Bet:
         }
 
     def to_payload(self) -> dict:
-        payload = {
-            "id": self.id,
+        return {
             "event_date": self.event_date.isoformat(),
             "type": self.type,
             "detail": self.detail,
@@ -83,9 +85,6 @@ class Bet:
             "outcome": self.outcome,
             "legs": [leg.to_payload() for leg in self.legs],
         }
-        if payload["cashout"] is None:
-            payload["cashout"] = None
-        return payload
 
     def gross_return(self) -> float:
         if self.cashout is not None:
@@ -96,6 +95,53 @@ class Bet:
 
     def net(self) -> float:
         return self.gross_return() - self.stake
+
+
+@dataclass(slots=True)
+class User:
+    id: str
+    email: str
+    full_name: Optional[str]
+    created_at: datetime
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "User":
+        return cls(
+            id=str(data.get("id")),
+            email=data.get("email", ""),
+            full_name=data.get("full_name"),
+            created_at=_parse_datetime(data.get("created_at")),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "email": self.email,
+            "full_name": self.full_name,
+            "created_at": self.created_at.isoformat(),
+        }
+
+
+@dataclass(slots=True)
+class AuthResponse:
+    access_token: str
+    token_type: str
+    user: User
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AuthResponse":
+        return cls(
+            access_token=data.get("access_token", ""),
+            token_type=data.get("token_type", "bearer"),
+            user=User.from_dict(data.get("user", {})),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "access_token": self.access_token,
+            "token_type": self.token_type,
+            "user": self.user.to_dict(),
+        }
 
 
 def _parse_date(value) -> date:
@@ -133,3 +179,10 @@ def serialize_bets(items: Iterable[Bet]) -> List[dict]:
     return [item.to_dict() for item in items]
 
 
+__all__ = [
+    "AuthResponse",
+    "Bet",
+    "ParlayLeg",
+    "User",
+    "serialize_bets",
+]

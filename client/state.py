@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Dict, Iterable, List, Optional
 
-from .models import Bet
+from .models import Bet, User
 
 
 @dataclass
@@ -25,12 +25,20 @@ class SummaryMetrics:
 
 
 class AppState:
-    def __init__(self, bets: Optional[Iterable[Bet]] = None) -> None:
+    def __init__(self, bets: Optional[Iterable[Bet]] = None, user: Optional[User] = None) -> None:
         self.bets: Dict[str, Bet] = {}
         if bets:
             for bet in bets:
                 self.bets[bet.id] = bet
         self.last_sync: Optional[datetime] = None
+        self.user: Optional[User] = user
+
+    @property
+    def user_id(self) -> Optional[str]:
+        return self.user.id if self.user else None
+
+    def set_user(self, user: Optional[User]) -> None:
+        self.user = user
 
     def upsert(self, bet: Bet) -> None:
         self.bets[bet.id] = bet

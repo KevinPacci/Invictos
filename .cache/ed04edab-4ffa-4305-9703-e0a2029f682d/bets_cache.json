@@ -1,0 +1,104 @@
+[
+  {
+    "id": "4f0958f2-ae6c-41b2-b15c-8c016bbb7acb",
+    "user_id": "ed04edab-4ffa-4305-9703-e0a2029f682d",
+    "event_date": "2025-09-24",
+    "type": "single",
+    "detail": "Serie A - Inter vs Milan, over 2.5 goles",
+    "stake": 80.0,
+    "odds": 1.92,
+    "cashout": null,
+    "outcome": "acertada",
+    "legs": [],
+    "created_at": "2025-09-26T20:45:22.986860",
+    "updated_at": "2025-09-26T20:45:22.986860"
+  },
+  {
+    "id": "9fa69d02-645a-4491-87d8-d3fae45e53c7",
+    "user_id": "ed04edab-4ffa-4305-9703-e0a2029f682d",
+    "event_date": "2025-09-24",
+    "type": "parlay",
+    "detail": "Parlay liga MX sábado",
+    "stake": 40.0,
+    "odds": 3.25,
+    "cashout": null,
+    "outcome": "pendiente",
+    "legs": [
+      {
+        "id": "679df5a6-4dbe-4027-808e-d8178beffdab",
+        "detail": "America gana vs Cruz Azul",
+        "odds": 1.55
+      },
+      {
+        "id": "91c0a33a-fb81-43bb-a4f1-fea06ebeb4a3",
+        "detail": "Monterrey +1.5 goles",
+        "odds": 1.75
+      },
+      {
+        "id": "2fde8e66-a069-495a-8d39-69a1ab63624c",
+        "detail": "Toluca doble oportunidad",
+        "odds": 1.2
+      }
+    ],
+    "created_at": "2025-09-26T20:45:22.986860",
+    "updated_at": "2025-09-26T20:45:22.986860"
+  },
+  {
+    "id": "6bc282bc-193a-4f63-942f-864e2ee6648e",
+    "user_id": "ed04edab-4ffa-4305-9703-e0a2029f682d",
+    "event_date": "2025-09-23",
+    "type": "single",
+    "detail": "NFL - Ravens ML vs Bengals",
+    "stake": 100.0,
+    "odds": 1.68,
+    "cashout": 0.0,
+    "outcome": "fallida",
+    "legs": [],
+    "created_at": "2025-09-26T20:45:22.986860",
+    "updated_at": "2025-09-26T20:45:22.986860"
+  },
+  {
+    "id": "85453c66-09c0-4211-b2bf-a747e7ea7533",
+    "user_id": "ed04edab-4ffa-4305-9703-e0a2029f682d",
+    "event_date": "2025-08-22",
+    "type": "parlay",
+    "detail": "Parlay MLS viernes",
+    "stake": 35.0,
+    "odds": 4.6,
+    "cashout": null,
+    "outcome": "fallida",
+    "legs": [
+      {
+        "id": "968f22a1-7daf-4f37-aaf4-1531e2c85736",
+        "detail": "LAFC + over 1.5 goles",
+        "odds": 1.9
+      },
+      {
+        "id": "d2620768-7d30-482a-b401-a792d80b622b",
+        "detail": "Inter Miami gana",
+        "odds": 1.65
+      },
+      {
+        "id": "59a16341-cf2b-4c07-9deb-9bc1c5b16fff",
+        "detail": "Atlanta United +0.5",
+        "odds": 1.45
+      }
+    ],
+    "created_at": "2025-09-26T20:45:22.986860",
+    "updated_at": "2025-09-26T20:45:22.986860"
+  },
+  {
+    "id": "c850f4ce-1f22-4d46-9630-e19252fc676a",
+    "user_id": "ed04edab-4ffa-4305-9703-e0a2029f682d",
+    "event_date": "2025-08-18",
+    "type": "single",
+    "detail": "Premier League - Arsenal gana y ambos anotan",
+    "stake": 60.0,
+    "odds": 3.1,
+    "cashout": 186.0,
+    "outcome": "acertada",
+    "legs": [],
+    "created_at": "2025-09-26T20:45:22.986860",
+    "updated_at": "2025-09-26T20:45:22.986860"
+  }
+]

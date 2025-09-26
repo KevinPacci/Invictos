@@ -4,8 +4,10 @@ from datetime import date
 
 from sqlmodel import delete
 
+from . import crud
 from .db import init_db, session_scope
-from .models import Bet, BetOutcome, BetType, ParlayLeg, utcnow
+from .models import Bet, BetOutcome, BetType, ParlayLeg, User, UserCreate, utcnow
+from .security import hash_password
 
 
 def seed_demo_data() -> None:
@@ -13,6 +15,14 @@ def seed_demo_data() -> None:
     with session_scope() as session:
         session.exec(delete(ParlayLeg))
         session.exec(delete(Bet))
+        session.exec(delete(User))
+
+        demo_user = UserCreate(
+            email="demo@example.com",
+            full_name="Demo Invictos",
+            password="demo1234",
+        )
+        user = crud.create_user(session, demo_user, hash_password(demo_user.password))
 
         sample = [
             Bet(
@@ -23,6 +33,7 @@ def seed_demo_data() -> None:
                 odds=1.92,
                 cashout=None,
                 outcome=BetOutcome.WIN,
+                user_id=user.id,
             ),
             Bet(
                 event_date=date(2025, 9, 24),
@@ -37,6 +48,7 @@ def seed_demo_data() -> None:
                     ParlayLeg(detail="Monterrey +1.5 goles", odds=1.75),
                     ParlayLeg(detail="Toluca doble oportunidad", odds=1.2),
                 ],
+                user_id=user.id,
             ),
             Bet(
                 event_date=date(2025, 9, 23),
@@ -46,6 +58,7 @@ def seed_demo_data() -> None:
                 odds=1.68,
                 cashout=0,
                 outcome=BetOutcome.LOSS,
+                user_id=user.id,
             ),
             Bet(
                 event_date=date(2025, 8, 18),
@@ -55,6 +68,7 @@ def seed_demo_data() -> None:
                 odds=3.1,
                 cashout=186,
                 outcome=BetOutcome.WIN,
+                user_id=user.id,
             ),
             Bet(
                 event_date=date(2025, 8, 22),
@@ -69,6 +83,7 @@ def seed_demo_data() -> None:
                     ParlayLeg(detail="Inter Miami gana", odds=1.65),
                     ParlayLeg(detail="Atlanta United +0.5", odds=1.45),
                 ],
+                user_id=user.id,
             ),
         ]
 

@@ -29,18 +29,18 @@ class PendingOperation:
         )
 
 
-def enqueue_operation(kind: str, bet: Bet | None, payload: Dict[str, Any]) -> None:
+def enqueue_operation(kind: str, bet: Bet | None, payload: Dict[str, Any], user_id: str) -> None:
     op = PendingOperation(
         kind=kind,
         bet_id=bet.id if bet else payload.get("bet_id", ""),
         payload=payload,
         created_at=datetime.utcnow().isoformat(),
     )
-    cache.append_pending_op(op.to_dict())
+    cache.append_pending_op(op.to_dict(), user_id)
 
 
-def flush_pending(client: ApiClient, state) -> None:
-    queue_raw = cache.load_pending_queue()
+def flush_pending(client: ApiClient, state, user_id: str) -> None:
+    queue_raw = cache.load_pending_queue(user_id)
     if not queue_raw:
         return
 
@@ -64,10 +64,10 @@ def flush_pending(client: ApiClient, state) -> None:
             applied.append(op.to_dict())
     except (ApiClientError, ApiConnectionError):
         remaining = [item for item in queue_raw if item not in applied]
-        cache.save_pending_queue(remaining)
+        cache.save_pending_queue(remaining, user_id)
         return
 
-    cache.save_pending_queue([])
+    cache.save_pending_queue([], user_id)
 
 
 __all__ = ["enqueue_operation", "flush_pending"]

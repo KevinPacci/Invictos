@@ -1,11 +1,11 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import UUID, uuid4
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, EmailStr
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -25,6 +25,54 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class UserBase(SQLModel):
+    email: EmailStr = Field(index=True, unique=True)
+    full_name: Optional[str] = Field(default=None, max_length=120)
+
+
+class User(UserBase, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    hashed_password: str = Field(max_length=256)
+    created_at: datetime = Field(default_factory=utcnow)
+
+    bets: list["Bet"] = Relationship(
+        sa_relationship=relationship(
+            "Bet",
+            back_populates="user",
+            cascade="all, delete-orphan",
+        )
+    )
+
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=8, max_length=128)
+
+
+class UserLogin(SQLModel):
+    email: EmailStr
+    password: str
+
+
+class UserRead(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    created_at: datetime
+
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class AuthResponse(Token):
+    user: UserRead
+
+
+class TokenPayload(SQLModel):
+    sub: Optional[UUID] = None
+
+
 class ParlayLegBase(SQLModel):
     detail: str = Field(max_length=255)
     odds: float = Field(gt=1)
@@ -42,8 +90,16 @@ class BetBase(SQLModel):
 
 class Bet(BetBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow, index=True)
+
+    user: Optional[User] = Relationship(
+        sa_relationship=relationship(
+            "User",
+            back_populates="bets",
+        )
+    )
 
     legs: list["ParlayLeg"] = Relationship(
         back_populates="bet",
@@ -61,7 +117,7 @@ class ParlayLeg(ParlayLegBase, table=True):
     bet_id: UUID = Field(foreign_key="bet.id", index=True)
     created_at: datetime = Field(default_factory=utcnow)
 
-    bet: "Bet" = Relationship(
+    bet: Bet = Relationship(
         back_populates="legs",
         sa_relationship=relationship("Bet", back_populates="legs"),
     )
@@ -77,6 +133,7 @@ class BetRead(BetBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
     legs: list[ParlayLegRead] = Field(default_factory=list)
@@ -106,6 +163,7 @@ class SyncResponse(SQLModel):
 
 
 __all__ = [
+    "AuthResponse",
     "Bet",
     "BetBase",
     "BetCreate",
@@ -117,4 +175,12 @@ __all__ = [
     "ParlayLegBase",
     "ParlayLegRead",
     "SyncResponse",
+    "Token",
+    "TokenPayload",
+    "User",
+    "UserBase",
+    "UserCreate",
+    "UserLogin",
+    "UserRead",
+    "utcnow",
 ]

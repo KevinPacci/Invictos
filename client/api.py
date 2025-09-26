@@ -7,7 +7,7 @@ import requests
 from requests import Session
 
 from .config import get_client_config
-from .models import Bet
+from .models import AuthResponse, Bet, User
 
 
 class ApiClientError(Exception):
@@ -23,8 +23,33 @@ class ApiClient:
         self.config = get_client_config()
         self.session = Session()
         self.session.headers.update({"Accept": "application/json"})
-        if self.config.api_key:
-            self.session.headers["x-api-key"] = self.config.api_key
+        self._token: Optional[str] = None
+
+    def set_auth(self, auth: Optional[AuthResponse]) -> None:
+        if auth is None:
+            self._token = None
+            self.session.headers.pop("Authorization", None)
+            return
+        self._token = auth.access_token
+        self.session.headers["Authorization"] = f"Bearer {auth.access_token}"
+
+    def register(self, email: str, password: str, full_name: Optional[str] = None) -> AuthResponse:
+        payload = {"email": email, "password": password, "full_name": full_name}
+        data = self._request("POST", "/auth/register", json=payload)
+        auth = AuthResponse.from_dict(data)
+        self.set_auth(auth)
+        return auth
+
+    def login(self, email: str, password: str) -> AuthResponse:
+        payload = {"email": email, "password": password}
+        data = self._request("POST", "/auth/login", json=payload)
+        auth = AuthResponse.from_dict(data)
+        self.set_auth(auth)
+        return auth
+
+    def fetch_profile(self) -> User:
+        data = self._request("GET", "/auth/me")
+        return User.from_dict(data)
 
     def list_bets(self, start: Optional[str] = None, end: Optional[str] = None) -> List[Bet]:
         params = {}

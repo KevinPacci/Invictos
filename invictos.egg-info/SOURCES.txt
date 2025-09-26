@@ -8,6 +8,7 @@ backend/crud.py
 backend/db.py
 backend/main.py
 backend/models.py
+backend/security.py
 backend/seed.py
 backend/settings.py
 client/__init__.py
@@ -16,9 +17,15 @@ client/api.py
 client/app.py
 client/cache.py
 client/config.py
+client/i18n.py
 client/models.py
 client/state.py
 client/sync.py
+client/ui/__init__.py
+client/ui/components.py
+client/ui/theme.py
+client/utils/__init__.py
+client/utils/formatting.py
 invictos.egg-info/PKG-INFO
 invictos.egg-info/SOURCES.txt
 invictos.egg-info/dependency_links.txt

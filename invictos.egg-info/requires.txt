@@ -4,6 +4,10 @@ sqlmodel>=0.0.14
 flet>=0.11.0
 requests>=2.31.0
 typer>=0.9.0
+passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1
+python-jose[cryptography]>=3.3.0
+email-validator>=2.0.0
 
 [dev]
 pytest>=7.0
