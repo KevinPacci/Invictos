@@ -1,0 +1,10 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.24.0
+sqlmodel>=0.0.14
+flet>=0.11.0
+requests>=2.31.0
+typer>=0.9.0
+
+[dev]
+pytest>=7.0
+httpx>=0.25
