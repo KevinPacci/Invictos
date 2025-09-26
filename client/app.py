@@ -11,60 +11,14 @@ from .api import ApiClient, ApiClientError, ApiConnectionError
 from .models import Bet, ParlayLeg
 from .state import AppState
 from .sync import enqueue_operation, flush_pending
-
-ACCENT = "#3dd598"
-DANGER = "#f36b7f"
-SURFACE = "#171c22"
-SURFACE_ALT = "#1e242c"
-TEXT = "#f5f7fa"
-TEXT_MUTED = "#a1acbd"
-
-
-def _format_currency(value: float) -> str:
-    formatted = f"{value:,.2f}"
-    return "$ " + formatted.replace(",", " ").replace(".", ",").replace(" ", ".")
-
-
-def _format_full_date(value: date) -> str:
-    months = [
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre",
-    ]
-    return f"{value.day} {months[value.month - 1]} {value.year}"
-
-
-def _format_month(key: str) -> str:
-    year, month = key.split("-")
-    months = [
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre",
-    ]
-    return f"{months[int(month) - 1]} {year}"
-
+from .ui import theme
+from .ui.components import build_summary_cards
+from .utils.formatting import format_currency, format_full_date, format_month
+from .i18n import t
 
 def _show_toast(page: ft.Page, text: str, error: bool = False) -> None:
     page.snack_bar = ft.SnackBar(
-        bgcolor=DANGER if error else SURFACE_ALT,
+        bgcolor=theme.DANGER if error else theme.SURFACE_ALT,
         content=ft.Text(text),
         open=True,
     )
@@ -72,12 +26,7 @@ def _show_toast(page: ft.Page, text: str, error: bool = False) -> None:
 
 
 def main(page: ft.Page) -> None:
-    page.title = "Invictos Tracker"
-    page.theme_mode = ft.ThemeMode.DARK
-    page.bgcolor = "#0f1215"
-    page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
-    page.padding = ft.padding.symmetric(horizontal=28, vertical=20)
-    page.scroll = ft.ScrollMode.AUTO
+    theme.configure_page(page)
 
     api = ApiClient()
     state = AppState(cache.load_cached_bets())
@@ -89,33 +38,33 @@ def main(page: ft.Page) -> None:
     date_picker = ft.DatePicker()
     page.overlay.append(date_picker)
 
-    summary_cards = _build_summary_cards()
+    summary_cards = build_summary_cards()
     metrics_row = ft.Row(summary_cards, spacing=12, run_spacing=12, wrap=True)
 
-    selected_date_label = ft.Text(_format_full_date(selected_date), size=18, weight=ft.FontWeight.W_600)
-    daily_headline = ft.Text("", color=TEXT_MUTED)
+    selected_date_label = ft.Text(format_full_date(selected_date), size=18, weight=ft.FontWeight.W_600)
+    daily_headline = ft.Text("", color=theme.TEXT_MUTED)
     daily_list = ft.Column(spacing=12)
     history_list = ft.Column(spacing=10)
 
     bet_type_selector = ft.SegmentedButton(
         selected={"single"},
         segments=[
-            ft.Segment(value="single", label=ft.Text("Sencilla")),
-            ft.Segment(value="parlay", label=ft.Text("Parlay")),
+            ft.Segment(value="single", label=ft.Text(t("bet.type.single"))),
+            ft.Segment(value="parlay", label=ft.Text(t("bet.type.parlay"))),
         ],
     )
 
-    detail_field = ft.TextField(label="Detalle", width=420)
-    stake_field = ft.TextField(label="Stake", width=160, keyboard_type=ft.KeyboardType.NUMBER)
-    odds_field = ft.TextField(label="Cuota", width=160, keyboard_type=ft.KeyboardType.NUMBER)
-    cashout_field = ft.TextField(label="Retorno / cashout", width=160, keyboard_type=ft.KeyboardType.NUMBER)
+    detail_field = ft.TextField(label=t("form.detail"), width=420)
+    stake_field = ft.TextField(label=t("form.stake"), width=160, keyboard_type=ft.KeyboardType.NUMBER)
+    odds_field = ft.TextField(label=t("form.odds"), width=160, keyboard_type=ft.KeyboardType.NUMBER)
+    cashout_field = ft.TextField(label=t("form.cashout"), width=160, keyboard_type=ft.KeyboardType.NUMBER)
     outcome_field = ft.Dropdown(
-        label="Estado",
+        label=t("form.outcome"),
         width=160,
         options=[
-            ft.dropdown.Option("acertada", "Acertada"),
-            ft.dropdown.Option("fallida", "Fallida"),
-            ft.dropdown.Option("pendiente", "Pendiente"),
+            ft.dropdown.Option("acertada", t("bet.status.won")),
+            ft.dropdown.Option("fallida", t("bet.status.lost")),
+            ft.dropdown.Option("pendiente", t("bet.status.pending")),
         ],
         value="pendiente",
     )
@@ -123,20 +72,20 @@ def main(page: ft.Page) -> None:
     leg_container = ft.Column(spacing=10)
     parlay_section = ft.Column(
         [
-            ft.Text("Selecciones", size=14, color=TEXT_MUTED),
+            ft.Text(t("form.parlay.section"), size=14, color=theme.TEXT_MUTED),
             leg_container,
-            ft.TextButton("Agregar seleccion", icon=ft.Icons.ADD, on_click=lambda e: add_leg_row()),
+            ft.TextButton(t("form.parlay.add"), icon=ft.Icons.ADD, on_click=lambda e: add_leg_row()),
         ]
     )
     parlay_section.visible = False
 
-    form_message = ft.Text("", color=TEXT_MUTED)
-    save_button = ft.FilledButton("Guardar", icon=ft.Icons.SAVE)
+    form_message = ft.Text("", color=theme.TEXT_MUTED)
+    save_button = ft.FilledButton(t("form.save"), icon=ft.Icons.SAVE)
 
     def add_leg_row(detail: str = "", odds: str = "") -> None:
-        detail_input = ft.TextField(label="Mercado", value=detail, width=320)
-        odds_input = ft.TextField(label="Cuota", value=odds, width=120, keyboard_type=ft.KeyboardType.NUMBER)
-        remove_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, icon_color=DANGER)
+        detail_input = ft.TextField(label=t("form.parlay.market"), value=detail, width=320)
+        odds_input = ft.TextField(label=t("form.odds"), value=odds, width=120, keyboard_type=ft.KeyboardType.NUMBER)
+        remove_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, icon_color=theme.DANGER)
 
         def _remove(_: ft.ControlEvent) -> None:
             leg_container.controls[:] = [row for row in leg_container.controls if row.data != (detail_input, odds_input)]
@@ -188,10 +137,10 @@ def main(page: ft.Page) -> None:
         month_key = selected_date.strftime("%Y-%m")
         month_metrics = state.month_metrics(month_key)
         cards_data = [
-            (summary_cards[0], _format_currency(month_metrics.stake_total), "Apostado"),
-            (summary_cards[1], _format_currency(month_metrics.net), "Neto"),
-            (summary_cards[2], f"{month_metrics.wins}/{month_metrics.count}", "Aciertos"),
-            (summary_cards[3], f"{month_metrics.yield_percent:.1f}%", "Yield"),
+            (summary_cards[0], format_currency(month_metrics.stake_total), t("summary.stake")),
+            (summary_cards[1], format_currency(month_metrics.net), t("summary.net")),
+            (summary_cards[2], f"{month_metrics.wins}/{month_metrics.count}", t("summary.hits")),
+            (summary_cards[3], f"{month_metrics.yield_percent:.1f}%", t("summary.yield")),
         ]
         for container, value, label in cards_data:
             value_text, caption = container.content.controls
@@ -203,17 +152,20 @@ def main(page: ft.Page) -> None:
         bets = state.by_date(selected_date)
         if bets:
             metrics = state.daily_metrics(selected_date)
-            daily_headline.value = (
-                f"{metrics.count} apuestas | Apostado {_format_currency(metrics.stake_total)} | "
-                f"Retorno {_format_currency(metrics.return_total)} | Neto {_format_currency(metrics.net)}"
+            daily_headline.value = t(
+                "daily.metrics",
+                count=metrics.count,
+                stake=format_currency(metrics.stake_total),
+                gross=format_currency(metrics.return_total),
+                net=format_currency(metrics.net),
             )
         else:
-            daily_headline.value = "Sin apuestas registradas"
+            daily_headline.value = t("daily.empty")
         daily_headline.update()
 
         daily_list.controls.clear()
         if not bets:
-            daily_list.controls.append(ft.Text("Agrega una apuesta para este dia", color=TEXT_MUTED))
+            daily_list.controls.append(ft.Text(t("daily.empty"), color=theme.TEXT_MUTED))
         else:
             for bet in bets:
                 daily_list.controls.append(build_bet_card(bet))
@@ -227,22 +179,22 @@ def main(page: ft.Page) -> None:
             metrics = state.month_metrics(month_key)
             history_list.controls.append(
                 ft.Container(
-                    bgcolor=SURFACE,
+                    bgcolor=theme.SURFACE,
                     border_radius=12,
                     padding=ft.padding.all(14),
                     content=ft.Column(
                         [
-                            ft.Text(_format_month(month_key), weight=ft.FontWeight.W_600),
-                            ft.Text(f"Neto {_format_currency(metrics.net)}", color=ACCENT if metrics.net >= 0 else DANGER),
-                            ft.Text(f"Stake {_format_currency(metrics.stake_total)}", color=TEXT_MUTED, size=12),
-                            ft.Text(f"Yield {metrics.yield_percent:.1f}%", color=TEXT_MUTED, size=12),
+                            ft.Text(format_month(month_key), weight=ft.FontWeight.W_600),
+                            ft.Text(f"Neto {format_currency(metrics.net)}", color=theme.ACCENT if metrics.net >= 0 else theme.DANGER),
+                            ft.Text(f"Stake {format_currency(metrics.stake_total)}", color=theme.TEXT_MUTED, size=12),
+                            ft.Text(f"Yield {metrics.yield_percent:.1f}%", color=theme.TEXT_MUTED, size=12),
                         ],
                         spacing=4,
                     ),
                 )
             )
         if not history_list.controls:
-            history_list.controls.append(ft.Text("Historial vacio aun", color=TEXT_MUTED))
+            history_list.controls.append(ft.Text(t("history.empty"), color=theme.TEXT_MUTED))
         history_list.update()
 
     def build_bet_card(bet: Bet) -> ft.Container:
@@ -251,21 +203,21 @@ def main(page: ft.Page) -> None:
             width=160,
             value=bet.outcome,
             options=[
-                ft.dropdown.Option("acertada", "Acertada"),
-                ft.dropdown.Option("fallida", "Fallida"),
-                ft.dropdown.Option("pendiente", "Pendiente"),
+                ft.dropdown.Option("acertada", t("bet.status.won")),
+                ft.dropdown.Option("fallida", t("bet.status.lost")),
+                ft.dropdown.Option("pendiente", t("bet.status.pending")),
             ],
             on_change=lambda e, bet_id=bet.id: update_outcome(bet_id, e.control.value),
         )
         cashout_input = ft.TextField(
             width=140,
-            label="Retorno",
+            label=t("form.cashout.label"),
             value=f"{bet.cashout:.2f}" if bet.cashout is not None else "",
             keyboard_type=ft.KeyboardType.NUMBER,
             on_blur=lambda e, bet_id=bet.id: update_cashout(bet_id, e.control.value),
         )
         delete_btn = ft.OutlinedButton(
-            text="Eliminar",
+            text=t("actions.delete"),
             icon=ft.Icons.DELETE_OUTLINE,
             on_click=lambda e, bet_id=bet.id: remove_bet(bet_id),
         )
@@ -285,8 +237,8 @@ def main(page: ft.Page) -> None:
                 ft.Row(
                     [
                         ft.Container(
-                            ft.Text("Parlay" if bet.type == "parlay" else "Sencilla", size=12),
-                            bgcolor=ACCENT if bet.type == "parlay" else "#5b8def",
+                            ft.Text(t("bet.type.parlay") if bet.type == "parlay" else t("bet.type.single"), size=12),
+                            bgcolor=theme.ACCENT if bet.type == "parlay" else theme.INFO,
                             padding=ft.padding.symmetric(horizontal=12, vertical=4),
                             border_radius=999,
                         ),
@@ -295,9 +247,9 @@ def main(page: ft.Page) -> None:
                     spacing=12,
                 ),
                 ft.Text(
-                    f"Stake {_format_currency(bet.stake)} | Cuota {bet.odds:.2f} | "
-                    f"Retorno {_format_currency(bet.gross_return())} | Neto {_format_currency(net_value)}",
-                    color=TEXT_MUTED,
+                    f"Stake {format_currency(bet.stake)} | Cuota {bet.odds:.2f} | "
+                    f"Retorno {format_currency(bet.gross_return())} | Neto {format_currency(net_value)}",
+                    color=theme.TEXT_MUTED,
                     size=12,
                 ),
                 ft.Row([outcome_selector, cashout_input, delete_btn], spacing=10, wrap=True),
@@ -305,7 +257,7 @@ def main(page: ft.Page) -> None:
             ],
             spacing=10,
         )
-        return ft.Container(bgcolor=SURFACE_ALT, border_radius=12, padding=ft.padding.all(16), content=body)
+        return ft.Container(bgcolor=theme.SURFACE_ALT, border_radius=12, padding=ft.padding.all(16), content=body)
 
     def update_outcome(bet_id: str, value: str) -> None:
         patch = {"outcome": value}
@@ -349,7 +301,7 @@ def main(page: ft.Page) -> None:
         except ApiConnectionError:
             state.remove(bet_id)
             enqueue_operation("delete", None, {"bet_id": bet_id})
-            _show_toast(page, "Eliminado localmente, pendiente de sincronizacion")
+            _show_toast(page, t("toast.delete.offline"))
         except ApiClientError as error:
             _show_toast(page, str(error), True)
             return
@@ -362,7 +314,7 @@ def main(page: ft.Page) -> None:
         nonlocal selected_date, selected_month
         selected_date = new_date
         selected_month = selected_date.strftime("%Y-%m")
-        selected_date_label.value = _format_full_date(selected_date)
+        selected_date_label.value = format_full_date(selected_date)
         selected_date_label.update()
         refresh_metrics()
         refresh_daily()
@@ -383,11 +335,11 @@ def main(page: ft.Page) -> None:
         try:
             remote = api.list_bets()
         except ApiConnectionError:
-            _show_toast(page, "Sin conexion con el backend", True)
+            _show_toast(page, t("toast.sync.fail"), True)
             return
         state.replace_all(remote, datetime.utcnow())
         cache.save_cached_bets(state.as_list())
-        _show_toast(page, "Sincronizacion completa")
+        _show_toast(page, t("toast.sync.ok"))
         refresh_metrics()
         refresh_daily()
         refresh_history()
@@ -408,21 +360,21 @@ def main(page: ft.Page) -> None:
     def submit_form(_: ft.ControlEvent | None = None) -> None:
         detail = (detail_field.value or "").strip()
         if not detail:
-            form_message.value = "Describe la apuesta"
-            form_message.color = DANGER
+            form_message.value = t("form.error.detail")
+            form_message.color = theme.DANGER
             form_message.update()
             return
         try:
             stake = float(stake_field.value)
             odds_val = float(odds_field.value)
         except (TypeError, ValueError):
-            form_message.value = "Stake/cuota invalidos"
-            form_message.color = DANGER
+            form_message.value = t("form.error.stake_odds")
+            form_message.color = theme.DANGER
             form_message.update()
             return
         if stake <= 0 or odds_val <= 1:
-            form_message.value = "Stake y cuota deben ser > 0"
-            form_message.color = DANGER
+            form_message.value = t("form.error.positive")
+            form_message.color = theme.DANGER
             form_message.update()
             return
         cashout = None
@@ -430,8 +382,8 @@ def main(page: ft.Page) -> None:
             try:
                 cashout = float(cashout_field.value)
             except ValueError:
-                form_message.value = "Cashout invalido"
-                form_message.color = DANGER
+                form_message.value = t("form.error.cashout")
+                form_message.color = theme.DANGER
                 form_message.update()
                 return
         legs: List[ParlayLeg] = []
@@ -446,8 +398,8 @@ def main(page: ft.Page) -> None:
                 if leg_detail and leg_odds > 1:
                     legs.append(ParlayLeg(id=str(uuid4()), detail=leg_detail, odds=leg_odds))
             if len(legs) < 2:
-                form_message.value = "Un parlay necesita 2+ selecciones"
-                form_message.color = DANGER
+                form_message.value = t("form.error.parlay")
+                form_message.color = theme.DANGER
                 form_message.update()
                 return
         bet = Bet(
@@ -469,10 +421,10 @@ def main(page: ft.Page) -> None:
         except ApiConnectionError:
             state.upsert(bet)
             enqueue_operation("create", bet, bet.to_dict())
-            _show_toast(page, "Sin conexion. Guardado localmente")
+            _show_toast(page, t("form.offline"))
         except ApiClientError as error:
             form_message.value = str(error)
-            form_message.color = DANGER
+            form_message.color = theme.DANGER
             form_message.update()
             return
         cache.save_cached_bets(state.as_list())
@@ -480,8 +432,8 @@ def main(page: ft.Page) -> None:
         refresh_daily()
         refresh_history()
         reset_form()
-        form_message.value = "Apuesta guardada"
-        form_message.color = ACCENT
+        form_message.value = t("form.success")
+        form_message.color = theme.ACCENT
         form_message.update()
 
     save_button.on_click = submit_form
@@ -490,36 +442,36 @@ def main(page: ft.Page) -> None:
         [
             ft.Row(
                 [
-                    ft.TextButton("Hoy", on_click=lambda e: set_selected_date(date.today())),
-                    ft.IconButton(icon=ft.Icons.ARROW_BACK, tooltip="Anterior", on_click=lambda e: shift_day(-1)),
-                    ft.IconButton(icon=ft.Icons.ARROW_FORWARD, tooltip="Siguiente", on_click=lambda e: shift_day(1)),
-                    ft.TextButton("Elegir fecha", icon=ft.Icons.CALENDAR_MONTH, on_click=open_date_picker),
+                    ft.TextButton(t("toolbar.today"), on_click=lambda e: set_selected_date(date.today())),
+                    ft.IconButton(icon=ft.Icons.ARROW_BACK, tooltip=t("toolbar.previous"), on_click=lambda e: shift_day(-1)),
+                    ft.IconButton(icon=ft.Icons.ARROW_FORWARD, tooltip=t("toolbar.next"), on_click=lambda e: shift_day(1)),
+                    ft.TextButton(t("toolbar.pick_date"), icon=ft.Icons.CALENDAR_MONTH, on_click=open_date_picker),
                 ],
                 spacing=6,
             ),
-            ft.FilledButton("Sincronizar", icon=ft.Icons.CLOUD_SYNC, on_click=load_remote),
+            ft.FilledButton(t("toolbar.sync"), icon=ft.Icons.CLOUD_SYNC, on_click=load_remote),
         ],
         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
     )
 
     dashboard = ft.Column(
         [
-            ft.Text("Invictos Bet Tracker", size=26, weight=ft.FontWeight.W_700),
-            ft.Text("Seguimiento modular de tus apuestas con sincronizacion", color=TEXT_MUTED),
+            ft.Text(t("app.title"), size=26, weight=ft.FontWeight.W_700),
+            ft.Text(t("app.subtitle"), color=theme.TEXT_MUTED),
             metrics_row,
             toolbar,
             selected_date_label,
             daily_headline,
-            ft.Container(bgcolor=SURFACE, border_radius=14, padding=ft.padding.all(16), content=daily_list),
-            ft.Text("Historial", size=20, weight=ft.FontWeight.W_600),
-            ft.Container(bgcolor=SURFACE_ALT, border_radius=14, padding=ft.padding.all(16), content=history_list),
+            ft.Container(bgcolor=theme.SURFACE, border_radius=14, padding=ft.padding.all(16), content=daily_list),
+            ft.Text(t("history.title"), size=20, weight=ft.FontWeight.W_600),
+            ft.Container(bgcolor=theme.SURFACE_ALT, border_radius=14, padding=ft.padding.all(16), content=history_list),
             ft.Container(
-                bgcolor=SURFACE,
+                bgcolor=theme.SURFACE,
                 border_radius=16,
                 padding=ft.padding.all(20),
                 content=ft.Column(
                     [
-                        ft.Text("Registrar nueva apuesta", size=18, weight=ft.FontWeight.W_600),
+                        ft.Text(t("form.title"), size=18, weight=ft.FontWeight.W_600),
                         bet_type_selector,
                         ft.Row([detail_field], wrap=True),
                         ft.Row([stake_field, odds_field, cashout_field, outcome_field], spacing=12, wrap=True),
@@ -543,21 +495,16 @@ def main(page: ft.Page) -> None:
         load_remote(None)
 
 
-def _build_summary_cards() -> List[ft.Container]:
-    cards: List[ft.Container] = []
-    for _ in range(4):
-        cards.append(
-            ft.Container(
-                bgcolor=SURFACE,
-                border_radius=16,
-                padding=ft.padding.all(16),
-                content=ft.Column(
-                    [
-                        ft.Text("-", size=24, weight=ft.FontWeight.W_700),
-                        ft.Text("", color=TEXT_MUTED),
-                    ],
-                    spacing=4,
-                ),
-            )
-        )
-    return cards
+
+
+
+
+
+
+
+
+
+
+
+
+
